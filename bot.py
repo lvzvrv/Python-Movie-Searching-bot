@@ -7,19 +7,15 @@ from sqlalchemy.orm import sessionmaker
 import datetime
 import requests
 
-# Вставь сюда свой токен бота
 TOKEN = '7396006417:AAG0FXPqn_GaeX5S7S1xdehN2XzW7knTGAY'
 
-# Ваш API-ключ TMDb
 API_KEY = '7194c3a4fa6c11fc9ec271c5b5b2a729'
 
-# Настройка базы данных PostgreSQL
 DATABASE_URL = "postgresql://postgres:BratkaIlya2015@localhost/mydatabase"
 engine = create_engine(DATABASE_URL)
 Base = declarative_base()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Определение модели User
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, index=True)
@@ -54,23 +50,26 @@ def get_movies(person_id):
     response = requests.get(url, params=params)
     return response.json().get('cast', [])
 
-# Обработчики команд
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('Hello! Use /register to register yourself.')
+    await update.message.reply_text('''Hello! 
+                        Use /register to register yourself. 
+                        Or /help to see list of commands''')
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('Help! Use /register to register yourself.')
+    await update.message.reply_text('''Hi. There is list of commands:
+                                    
+    /register - for registration
+    /delete_user - for delete yourself from bot users database
+    /search_movies - for searching all movies by actor or director''')
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
     session = SessionLocal()
     try:
-        # Проверка, есть ли уже пользователь в базе данных
         existing_user = session.query(User).filter(User.username == user.username).first()
         if (existing_user):
             await update.message.reply_text('You are already registered.')
         else:
-            # Добавление нового пользователя
             new_user = User(username=user.username, first_name=user.first_name, last_name=user.last_name)
             session.add(new_user)
             session.commit()
@@ -133,18 +132,15 @@ async def search_movies(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"No person found with the name {name}.")
 
 def main():
-    # Создание приложения
     application = Application.builder().token(TOKEN).build()
 
-    # Регистрация обработчиков команд
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("register", register))
     application.add_handler(CommandHandler("list_users", list_users))
     application.add_handler(CommandHandler("delete_user", delete_user))
-    application.add_handler(CommandHandler("search_movies", search_movies))  # Новый обработчик команды
+    application.add_handler(CommandHandler("search_movies", search_movies)) 
 
-    # Запуск бота
     application.run_polling()
 
 if __name__ == '__main__':
